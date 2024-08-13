@@ -1,0 +1,16 @@
+[package]
+name = "ChainReactionFun"
+version = "1.0.0"
+authors = []
+
+[addresses]
+chain_reaction_fun = "03b1ad6b36dc54d1a73c1beb10159b1c6adfdbef736fa51c558d97099664c17c"
+
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "devnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]
