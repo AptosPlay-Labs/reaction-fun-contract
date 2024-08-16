@@ -1,107 +1,94 @@
 module chain_reaction_fun::chain_reaction_game {
     use std::signer;
-    use aptos_framework::event;
+    use std::vector;
+    use aptos_framework::coin;
+    use aptos_framework::aptos_coin::AptosCoin;
+    use chain_reaction_fun::admin_contract;
+    use chain_reaction_fun::game_verifier;
+    use chain_reaction_fun::game_room_manager;
 
     struct GameState has key {
-        room_manager: address,
-        bet_manager: address,
-        winner_verifier: address,
-        fee_manager: address,
-        admin: address,
+        rooms: vector<u64>,
+        active_games: u64,
+        total_fees: u64,
+        fee_percentage: u8,
     }
 
-    #[event]
-    struct GameInitialized has drop, store {
-        admin: address,
-        room_manager: address,
-        bet_manager: address,
-        winner_verifier: address,
-        fee_manager: address,
-    }
-
-    const ENO_PERMISSION: u64 = 1;
+    const E_NOT_INITIALIZED: u64 = 1;
+    const E_ALREADY_INITIALIZED: u64 = 2;
+    const E_NOT_ADMIN: u64 = 3;
+    const E_INVALID_WINNER: u64 = 4;
+    const E_NOT_CONTRACT_ACCOUNT: u64 = 5;
 
     public fun initialize(account: &signer) {
-        let sender = signer::address_of(account);
-        assert!(sender == @admin_address, ENO_PERMISSION);
-
+        assert!(!exists<GameState>(signer::address_of(account)), E_ALREADY_INITIALIZED);
         move_to(account, GameState {
-            room_manager: @0x0,
-            bet_manager: @0x0,
-            winner_verifier: @0x0,
-            fee_manager: @0x0,
-            admin: sender,
+            rooms: vector::empty(),
+            active_games: 0,
+            total_fees: 0,
+            fee_percentage: 5, // 5% fee
         });
-
-        event::emit(GameInitialized {
-            admin: sender,
-            room_manager: @0x0,
-            bet_manager: @0x0,
-            winner_verifier: @0x0,
-            fee_manager: @0x0,
-        });
+        admin_contract::initialize(account);
+        game_room_manager::initialize(account);
     }
 
-    public fun set_room_manager(account: &signer, room_manager: address) acquires GameState {
-        let sender = signer::address_of(account);
-        let game_state = borrow_global_mut<GameState>(@admin_address);
-        assert!(sender == game_state.admin, ENO_PERMISSION);
-        game_state.room_manager = room_manager;
+    public entry fun create_room(creator: &signer, bet_amount: u64, max_players: u8) acquires GameState {
+        assert!(exists<GameState>(@chain_reaction_fun), E_NOT_INITIALIZED);
+        let room_id = game_room_manager::create_room(creator, bet_amount, max_players);
+        let state = borrow_global_mut<GameState>(@chain_reaction_fun);
+        vector::push_back(&mut state.rooms, room_id);
     }
 
-    public fun set_bet_manager(account: &signer, bet_manager: address) acquires GameState {
-        let sender = signer::address_of(account);
-        let game_state = borrow_global_mut<GameState>(@admin_address);
-        assert!(sender == game_state.admin, ENO_PERMISSION);
-        game_state.bet_manager = bet_manager;
+    public entry fun join_room(player: &signer, room_id: u64) acquires GameState {
+        assert!(exists<GameState>(@chain_reaction_fun), E_NOT_INITIALIZED);
+        game_room_manager::join_room(player, room_id);
+        let state = borrow_global_mut<GameState>(@chain_reaction_fun);
+        if (game_room_manager::is_room_full(room_id)) {
+            state.active_games = state.active_games + 1;
+        }
     }
 
-    public fun set_winner_verifier(account: &signer, winner_verifier: address) acquires GameState {
-        let sender = signer::address_of(account);
-        let game_state = borrow_global_mut<GameState>(@admin_address);
-        assert!(sender == game_state.admin, ENO_PERMISSION);
-        game_state.winner_verifier = winner_verifier;
+    public entry fun leave_room(player: &signer, room_id: u64) acquires GameState {
+        assert!(exists<GameState>(@chain_reaction_fun), E_NOT_INITIALIZED);
+        let (refunded, penalty) = game_room_manager::leave_room(player, room_id);
+        if (!refunded) {
+            let state = borrow_global_mut<GameState>(@chain_reaction_fun);
+            state.total_fees = state.total_fees + penalty;
+        }
     }
 
-    public fun set_fee_manager(account: &signer, fee_manager: address) acquires GameState {
-        let sender = signer::address_of(account);
-        let game_state = borrow_global_mut<GameState>(@admin_address);
-        assert!(sender == game_state.admin, ENO_PERMISSION);
-        game_state.fee_manager = fee_manager;
+    public entry fun declare_winner(room_id: u64, winner_address: address, game_state: vector<u8>, signature: vector<u8>) acquires GameState {
+        assert!(exists<GameState>(@chain_reaction_fun), E_NOT_INITIALIZED);
+        assert!(game_verifier::verify_winner(room_id, winner_address, game_state, signature), E_INVALID_WINNER);
+
+        let state = borrow_global_mut<GameState>(@chain_reaction_fun);
+
+        let fee_amount = game_room_manager::distribute_winnings_with_fee(room_id, winner_address, state.fee_percentage);
+
+        state.total_fees = state.total_fees + fee_amount;
+        state.active_games = state.active_games - 1;
+
+        let index = 0;
+        let len = vector::length(&state.rooms);
+        while (index < len) {
+            if (*vector::borrow(&state.rooms, index) == room_id) {
+                vector::remove(&mut state.rooms, index);
+                break
+            };
+            index = index + 1;
+        };
+
+        game_room_manager::close_room(room_id);
     }
 
-    #[view]
-    public fun get_game_state(): (address, address, address, address, address) acquires GameState {
-        let game_state = borrow_global<GameState>(@admin_address);
-        (
-            game_state.room_manager,
-            game_state.bet_manager,
-            game_state.winner_verifier,
-            game_state.fee_manager,
-            game_state.admin
-        )
-    }
+    public entry fun withdraw_fees(admin: &signer, account:address) acquires GameState {
+        assert!(admin_contract::is_admin(admin), E_NOT_ADMIN);
+        assert!(signer::address_of(admin) == @chain_reaction_fun, E_NOT_CONTRACT_ACCOUNT);
 
-    #[test(admin = @admin_address)]
-    public entry fun test_initialize_and_setters(admin: signer) acquires GameState {
-        initialize(&admin);
-        
-        let (room_manager, bet_manager, winner_verifier, fee_manager, admin_addr) = get_game_state();
-        assert!(room_manager == @0x0, 0);
-        assert!(bet_manager == @0x0, 1);
-        assert!(winner_verifier == @0x0, 2);
-        assert!(fee_manager == @0x0, 3);
-        assert!(admin_addr == signer::address_of(&admin), 4);
-
-        set_room_manager(&admin, @0x1);
-        set_bet_manager(&admin, @0x2);
-        set_winner_verifier(&admin, @0x3);
-        set_fee_manager(&admin, @0x4);
-
-        let (room_manager, bet_manager, winner_verifier, fee_manager, _) = get_game_state();
-        assert!(room_manager == @0x1, 5);
-        assert!(bet_manager == @0x2, 6);
-        assert!(winner_verifier == @0x3, 7);
-        assert!(fee_manager == @0x4, 8);
+        let state = borrow_global_mut<GameState>(@chain_reaction_fun);
+        let fee_amount = state.total_fees;
+        state.total_fees = 0;
+        // Asumiendo que las tarifas se acumulan en la cuenta del contrato
+        coin::transfer<AptosCoin>(admin,  account, fee_amount);
     }
 }
