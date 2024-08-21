@@ -27,8 +27,9 @@ module chain_reaction_fun::game_room_manager {
     const E_ALREADY_JOINED: u64 = 3;
     const E_NOT_IN_ROOM: u64 = 4;
     const E_ROOM_STARTED: u64 = 5;
-    const E_INSUFFICIENT_BALANCE: u64 = 6;
-    const E_ALREADY_INITIALIZED: u64 = 2;
+    const E_ROOM_MIN_PLAYERS: u64 = 6;
+    const E_INSUFFICIENT_BALANCE: u64 = 7;
+    const E_ALREADY_INITIALIZED: u64 = 8;
 
     public fun initialize(account: &signer) {
         assert!(!exists<GameRooms>(signer::address_of(account)), E_ALREADY_INITIALIZED);
@@ -39,6 +40,7 @@ module chain_reaction_fun::game_room_manager {
     }
 
     public fun create_room(creator: &signer, bet_amount: u64, max_players: u8): u64 acquires GameRooms {
+        assert!(max_players > 1, E_ROOM_MIN_PLAYERS);
         let game_rooms = borrow_global_mut<GameRooms>(@chain_reaction_fun);
         let room_id = game_rooms.room_counter + 1;
         game_rooms.room_counter = game_rooms.room_counter + 1;
@@ -66,15 +68,15 @@ module chain_reaction_fun::game_room_manager {
         assert!(table::contains(&game_rooms.rooms, room_id), E_ROOM_NOT_FOUND);
 
         let room = table::borrow_mut(&mut game_rooms.rooms, room_id);
-        assert!(room.state == 0, E_ROOM_STARTED);
+        //assert!(room.state == 0, E_ROOM_STARTED);//revisar
         assert!(vector::length(&room.current_players) < (room.max_players as u64), E_ROOM_FULL);
         assert!(!vector::contains(&room.current_players, &player_address), E_ALREADY_JOINED);
 
         vector::push_back(&mut room.current_players, player_address);
-
-        if (vector::length(&room.current_players) == (room.max_players as u64)) {
-            room.state = 1; // Started
-        };
+        //revisar
+        // if (vector::length(&room.current_players) == (room.max_players as u64)) {
+        //     room.state = 1; // Started
+        // };
 
         room.bet_amount
     }
