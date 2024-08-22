@@ -68,15 +68,15 @@ module chain_reaction_fun::game_room_manager {
         assert!(table::contains(&game_rooms.rooms, room_id), E_ROOM_NOT_FOUND);
 
         let room = table::borrow_mut(&mut game_rooms.rooms, room_id);
-        //assert!(room.state == 0, E_ROOM_STARTED);//revisar
+        assert!(room.state == 0, E_ROOM_STARTED);
         assert!(vector::length(&room.current_players) < (room.max_players as u64), E_ROOM_FULL);
         assert!(!vector::contains(&room.current_players, &player_address), E_ALREADY_JOINED);
 
         vector::push_back(&mut room.current_players, player_address);
-        //revisar
-        // if (vector::length(&room.current_players) == (room.max_players as u64)) {
-        //     room.state = 1; // Started
-        // };
+
+        if (vector::length(&room.current_players) == (room.max_players as u64)) {
+            room.state = 1; // Started
+        };
 
         room.bet_amount
     }
@@ -135,8 +135,8 @@ module chain_reaction_fun::game_room_manager {
     public fun close_room(room_id: u64) acquires GameRooms {
         let game_rooms = borrow_global_mut<GameRooms>(@chain_reaction_fun);
         assert!(table::contains(&game_rooms.rooms, room_id), E_ROOM_NOT_FOUND);
-        let Room { id: _, creator: _, bet_amount: _, max_players: _, current_players: _, vault, state: _, created_at: _ } = table::remove(&mut game_rooms.rooms, room_id);
-        coin::destroy_zero(vault);
+        let room = table::borrow_mut(&mut game_rooms.rooms, room_id);
+        room.state = 2;
     }
 
     fun refund_bet(player_address: address, amount: u64, vault: &mut Coin<AptosCoin>) {
