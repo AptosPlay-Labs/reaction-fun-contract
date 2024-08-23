@@ -16,12 +16,6 @@ module chain_reaction_fun::game_room_manager_tests {
     const E_UNEXPECTED_REFUND: u64 = 1003;
     const E_UNEXPECTED_FEE: u64 = 1004;
 
-    // Helper function to setup test environment
-    fun setup_test(aptos_framework: &signer, chain_reaction: &signer) {
-        timestamp::set_time_has_started_for_testing(aptos_framework);
-        game_room_manager::initialize(chain_reaction);
-    }
-
     // Helper function to setup player accounts
     fun setup_player_accounts(aptos_framework: &signer, chain_reaction: &signer, player1: &signer, player2: &signer) {
         assert!(signer::address_of(aptos_framework) == @aptos_framework, 0);

@@ -84,8 +84,4 @@ module chain_reaction_fun::chain_reaction_game {
         coin::transfer<AptosCoin>(admin, account, fee_amount);
     }
 
-    #[test_only]
-    public fun initialize_for_test(account: &signer) {
-        initialize(account);
-    }
 }

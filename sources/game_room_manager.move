@@ -107,18 +107,20 @@ module chain_reaction_fun::game_room_manager {
         let player_address = signer::address_of(player);
         assert!(vector::contains(&room.current_players, &player_address), E_NOT_IN_ROOM);
 
-        let index = 0;
-        let len = vector::length(&room.current_players);
-        while (index < len) {
-            if (*vector::borrow(&room.current_players, index) == player_address) {
-                vector::remove(&mut room.current_players, index);
-                break
-            };
-            index = index + 1;
-        };
+        // let index = 0;
+        // let len = vector::length(&room.current_players);
+        // while (index < len) {
+        //     if (*vector::borrow(&room.current_players, index) == player_address) {
+        //         vector::remove(&mut room.current_players, index);
+        //         break
+        //     };
+        //     index = index + 1;
+        // };
 
         if (room.state == 0) { // Waiting
             refund_bet(player_address, room.bet_amount, &mut room.vault);
+            //room.max_players = room.max_players - 1;
+            room.state = 2;
             (true, 0)
         } else { // Started
             (false, room.bet_amount)
