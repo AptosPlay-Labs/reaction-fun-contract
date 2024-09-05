@@ -10,7 +10,7 @@ std = "0x1"
 aptos_framework = "0x1"
 aptos_token = "0x3"
 #"03b1ad6b36dc54d1a73c1beb10159b1c6adfdbef736fa51c558d97099664c17c"
-#public_key = "8a66ebbc8cd1bd6424c8a9fc1e8d7333e9cd5ebfaad6e1e9d178406c383d7ba3"
+public_key = "0x2c6d33bd68066e591671c361a22cd4c02ed5c436939c163ac6c723bc3857b4b0"
 #Constants for test addresses
 PLAYER1 = "0x123"
 PLAYER2 = "0x456"

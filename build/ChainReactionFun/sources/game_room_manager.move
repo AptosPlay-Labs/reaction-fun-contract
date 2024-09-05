@@ -5,6 +5,8 @@ module chain_reaction_fun::game_room_manager {
     use aptos_framework::aptos_coin::AptosCoin;
     use aptos_framework::timestamp;
     use aptos_std::table::{Self, Table};
+    use chain_reaction_fun::admin_contract;
+    use chain_reaction_fun::game_verifier;
 
     struct Room has store {
         id: u64,
@@ -30,6 +32,11 @@ module chain_reaction_fun::game_room_manager {
     const E_ROOM_MIN_PLAYERS: u64 = 6;
     const E_INSUFFICIENT_BALANCE: u64 = 7;
     const E_ALREADY_INITIALIZED: u64 = 8;
+    const E_UNAUTHORIZED: u64 = 9;
+    const E_INVALID_SIGNATURE: u64 = 10;
+    const E_INVALID_WINNER: u64 = 11;
+    const E_NOT_INITIALIZED: u64 = 12;
+    const E_INVALID_CALLER_WIN: u64 = 13;
 
     public fun initialize(account: &signer) {
         assert!(!exists<GameRooms>(signer::address_of(account)), E_ALREADY_INITIALIZED);
@@ -155,10 +162,25 @@ module chain_reaction_fun::game_room_manager {
         coin::deposit(winner_address, winnings);
     }
 
-    public fun distribute_winnings_with_fee(room_id: u64, winner_address: address, fee_percentage: u8): u64 acquires GameRooms {
+    public fun declare_winner_distribute_winnings( caller: &signer, room_id: u64, winner_address: address,
+                                     game_state: vector<u8>, signature: vector<u8>, fee_percentage:u8): u64 acquires GameRooms {
+        let caller_address = signer::address_of(caller);
         let game_rooms = borrow_global_mut<GameRooms>(@chain_reaction_fun);
         assert!(table::contains(&game_rooms.rooms, room_id), E_ROOM_NOT_FOUND);
         let room = table::borrow_mut(&mut game_rooms.rooms, room_id);
+
+        assert!(caller_address == winner_address, E_INVALID_CALLER_WIN);
+        assert!(vector::contains(&room.current_players, &caller_address), E_UNAUTHORIZED);
+        assert!(vector::contains(&room.current_players, &winner_address), E_INVALID_WINNER);
+
+        assert!(game_verifier::verify_winner(room_id, winner_address, game_state, signature), E_INVALID_SIGNATURE);
+
+        let fee_amount = distribute_winnings_with_fee(room, winner_address, fee_percentage);
+
+        fee_amount
+    }
+
+    fun distribute_winnings_with_fee(room: &mut Room, winner_address: address, fee_percentage: u8): u64 {
 
         let total_pot = coin::value(&room.vault);
         let fee_amount = (total_pot * (fee_percentage as u64)) / 100;
@@ -167,11 +189,10 @@ module chain_reaction_fun::game_room_manager {
         let winner_coins = coin::extract(&mut room.vault, winnings);
         coin::deposit(winner_address, winner_coins);
 
-        // Transferir la tarifa a la cuenta del contrato
         let fee_coins = coin::extract(&mut room.vault, fee_amount);
-        coin::deposit(@chain_reaction_fun, fee_coins);
+        let fee_account = admin_contract::get_fee_account_address();
+        coin::deposit(fee_account, fee_coins);
 
-        // Retornamos la cantidad de la tarifa
         fee_amount
     }
 }
