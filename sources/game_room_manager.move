@@ -153,17 +153,13 @@ module chain_reaction_fun::game_room_manager {
         coin::deposit(player_address, refund);
     }
 
-    public fun distribute_winnings(winner_address: address, amount: u64, room_id: u64) acquires GameRooms {
-        let game_rooms = borrow_global_mut<GameRooms>(@chain_reaction_fun);
-        assert!(table::contains(&game_rooms.rooms, room_id), E_ROOM_NOT_FOUND);
-        let room = table::borrow_mut(&mut game_rooms.rooms, room_id);
-        assert!(coin::value(&room.vault) >= amount, E_INSUFFICIENT_BALANCE);
-        let winnings = coin::extract(&mut room.vault, amount);
-        coin::deposit(winner_address, winnings);
-    }
 
-    public fun declare_winner_distribute_winnings( caller: &signer, room_id: u64, winner_address: address,
-                                     game_state: vector<u8>, signature: vector<u8>, fee_percentage:u8): u64 acquires GameRooms {
+    public fun declare_winner_distribute_winnings( caller: &signer, room_id: u64,
+                                                   winner_address: address,
+                                                   game_state: vector<u8>,
+                                                   signature: vector<u8>,
+                                                   fee_percentage:u8): u64 acquires GameRooms {
+
         let caller_address = signer::address_of(caller);
         let game_rooms = borrow_global_mut<GameRooms>(@chain_reaction_fun);
         assert!(table::contains(&game_rooms.rooms, room_id), E_ROOM_NOT_FOUND);

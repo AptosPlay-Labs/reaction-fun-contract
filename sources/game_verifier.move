@@ -3,10 +3,6 @@ module chain_reaction_fun::game_verifier {
     use std::bcs;
     use std::vector;
     use aptos_std::ed25519;
-    //use aptos_std::debug;
-
-    //const SERVER_PUBLIC_KEY: vector<u8> = @public_key;
-
 
     public fun verify_winner(room_id: u64, winner_address: address, game_state: vector<u8>, signature: vector<u8>): bool {
         let message = room_id_to_bytes(room_id);
@@ -15,7 +11,6 @@ module chain_reaction_fun::game_verifier {
 
         let signature = ed25519::new_signature_from_bytes(signature);
         let public_key_vector =  address_to_bytes(@public_key);
-        //debug::print(&public_key_vector);
         let public_key = ed25519::new_unvalidated_public_key_from_bytes(public_key_vector);
         ed25519::signature_verify_strict(&signature, &public_key, message)
     }
