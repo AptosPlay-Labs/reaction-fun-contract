@@ -1,17 +1,24 @@
 [package]
 name = "ChainReactionFun"
 version = "1.0.0"
+upgrade_policy = "compatible"
 authors = []
 
 [addresses]
+chain_reaction_fun = "_"
+public_key = "_"
+#Constants for test addresses
+#PLAYER1 = "_"
+#PLAYER2 = "_"
+#FEE_ADDRESS = "_"
+
+[dev-addresses]
 chain_reaction_fun = "0x567"
 public_key = "0xd0f8a1f9df5d7d1f73e3cb40d0f17da0cbaf9f09cc6c3590a0dde04e4ba11fcd"
 #Constants for test addresses
-PLAYER1 = "0x123"
+PLAYER1 = "0x123" #"0x5de0db2e6d3e1de671d2b700f7d481b00867d0d15021e520f929b26f502fca5b"
 PLAYER2 = "0x456"
 FEE_ADDRESS = "0x875"
-
-[dev-addresses]
 
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-core.git"

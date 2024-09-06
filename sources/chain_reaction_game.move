@@ -20,9 +20,10 @@ module chain_reaction_fun::chain_reaction_game {
     const E_INVALID_WINNER: u64 = 4;
     const E_NOT_CONTRACT_ACCOUNT: u64 = 5;
     const E_ROOM_NOT_FOUND: u64 = 6;
-    const E_INVALID_FEE_PERCENTAGE: u64 = 7; // New error constant
+    const E_NOT_REFOUND: u64 = 7;
+    const E_INVALID_FEE_PERCENTAGE: u64 = 8; // New error constant
 
-    public fun initialize(account: &signer) {
+    fun init_module(account: &signer) {
         assert!(!exists<GameState>(signer::address_of(account)), E_ALREADY_INITIALIZED);
         move_to(account, GameState {
             rooms: table::new(),
@@ -32,8 +33,8 @@ module chain_reaction_fun::chain_reaction_game {
             total_fees: 0,
             fee_percentage: 5, // 5% fee
         });
-        admin_contract::initialize(account);
-        game_room_manager::initialize(account);
+        //admin_contract::initialize(account);
+        //game_room_manager::initialize(account);
     }
 
     public entry fun create_room(creator: &signer, bet_amount: u64, max_players: u8) acquires GameState {
@@ -52,19 +53,26 @@ module chain_reaction_fun::chain_reaction_game {
 
     public entry fun leave_room(player: &signer, room_id: u64) acquires GameState {
         assert!(exists<GameState>(@chain_reaction_fun), E_NOT_INITIALIZED);
-        let (refunded, _) = game_room_manager::leave_room(player, room_id);
         let state = borrow_global_mut<GameState>(@chain_reaction_fun);
-        if (!refunded) {
-            //aqui deberia declararce winer al otro jugador ya que uno avandono el juego
-            //state.total_fees = state.total_fees + penalty;
-        } else {
-            if (table::contains(&state.rooms, room_id)) {
-                state.active_games = state.active_games - 1;
-                state.end_games = state.end_games + 1;
-                table::upsert(&mut state.rooms, room_id, false);
-                game_room_manager::close_room(room_id);
-            }
-        }
+        assert!(table::contains(&state.rooms, room_id), E_ROOM_NOT_FOUND);
+        let (refunded, bet_amount) = game_room_manager::leave_room(player, room_id);
+
+        assert!(refunded==true, E_NOT_REFOUND);
+        assert!(bet_amount==0, E_NOT_REFOUND);
+        state.end_games = state.end_games + 1;
+        table::upsert(&mut state.rooms, room_id, false);
+        game_room_manager::close_room(room_id);
+
+        // if (!refunded) {
+        //     //aqui deberia declararce winer al otro jugador ya que uno avandono el juego
+        //     //state.total_fees = state.total_fees + penalty;
+        // } else {
+        //     assert!(table::contains(&state.rooms, room_id), E_ROOM_NOT_FOUND);
+        //     state.active_games = state.active_games - 1;
+        //     state.end_games = state.end_games + 1;
+        //     table::upsert(&mut state.rooms, room_id, false);
+        //     game_room_manager::close_room(room_id);
+        // }
     }
 
     public entry fun declare_winner(caller: &signer, room_id: u64, winner_address: address, game_state: vector<u8>, signature: vector<u8>) acquires GameState {
@@ -102,9 +110,17 @@ module chain_reaction_fun::chain_reaction_game {
         state.fee_percentage = new_percentage;
     }
 
-    public fun get_game_stats(): (u64, u64, u8) acquires GameState {
+    #[view]
+    public fun get_game_stats(): (u64, u64, u64, u64, u8) acquires GameState {
+        assert!(exists<GameState>(@chain_reaction_fun), E_NOT_INITIALIZED);
         let state = borrow_global<GameState>(@chain_reaction_fun);
-        (state.active_games, state.total_fees, state.fee_percentage)
+        (
+            state.created_games,
+            state.active_games,
+            state.end_games,
+            state.total_fees,
+            state.fee_percentage
+        )
     }
 
 

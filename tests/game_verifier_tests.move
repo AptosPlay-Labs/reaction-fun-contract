@@ -39,6 +39,14 @@ module chain_reaction_fun::game_verifier_tests {
     }
 
     #[test]
+    public fun test_create_signeture_to_win(){
+        let message = game_verifier::room_id_to_bytes(ROOM_ID);
+        vector::append(&mut message, game_verifier::address_to_bytes(WINNER_ADDRESS));
+        vector::append(&mut message, GAME_STATE);
+        debug::print(&message);
+    }
+
+    #[test]
     public fun test_verify_winner_valid_signature() {
         let result = game_verifier::verify_winner(ROOM_ID, WINNER_ADDRESS, GAME_STATE, VALID_SIGNATURE);
         assert!(result == true, 0);

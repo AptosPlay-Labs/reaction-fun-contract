@@ -30,15 +30,17 @@ module chain_reaction_fun::game_room_manager {
     const E_NOT_IN_ROOM: u64 = 4;
     const E_ROOM_STARTED: u64 = 5;
     const E_ROOM_MIN_PLAYERS: u64 = 6;
-    const E_INSUFFICIENT_BALANCE: u64 = 7;
-    const E_ALREADY_INITIALIZED: u64 = 8;
-    const E_UNAUTHORIZED: u64 = 9;
-    const E_INVALID_SIGNATURE: u64 = 10;
-    const E_INVALID_WINNER: u64 = 11;
-    const E_NOT_INITIALIZED: u64 = 12;
-    const E_INVALID_CALLER_WIN: u64 = 13;
+    const E_ROOM_MIN_BET: u64 = 7;
+    const E_INSUFFICIENT_BALANCE: u64 = 8;
+    const E_ALREADY_INITIALIZED: u64 = 9;
+    const E_UNAUTHORIZED: u64 = 10;
+    const E_INVALID_SIGNATURE: u64 = 11;
+    const E_INVALID_WINNER: u64 = 12;
+    const E_NOT_INITIALIZED: u64 = 13;
+    const E_INVALID_CALLER_WIN: u64 = 14;
 
-    public fun initialize(account: &signer) {
+    //public fun initialize(account: &signer) {
+    fun init_module(account: &signer) {
         assert!(!exists<GameRooms>(signer::address_of(account)), E_ALREADY_INITIALIZED);
         move_to(account, GameRooms {
             rooms: table::new(),
@@ -46,8 +48,17 @@ module chain_reaction_fun::game_room_manager {
         });
     }
 
+    // public fun initialize(account: &signer) {
+    //     assert!(!exists<GameRooms>(signer::address_of(account)), E_ALREADY_INITIALIZED);
+    //     move_to(account, GameRooms {
+    //         rooms: table::new(),
+    //         room_counter: 0,
+    //     });
+    // }
+
     public fun create_room(creator: &signer, bet_amount: u64, max_players: u8): u64 acquires GameRooms {
         assert!(max_players > 1, E_ROOM_MIN_PLAYERS);
+        assert!(bet_amount > 0, E_ROOM_MIN_BET);
         let game_rooms = borrow_global_mut<GameRooms>(@chain_reaction_fun);
         let room_id = game_rooms.room_counter + 1;
         game_rooms.room_counter = game_rooms.room_counter + 1;
@@ -127,7 +138,7 @@ module chain_reaction_fun::game_room_manager {
         if (room.state == 0) { // Waiting
             refund_bet(player_address, room.bet_amount, &mut room.vault);
             //room.max_players = room.max_players - 1;
-            room.state = 2;
+            //room.state = 2;
             (true, 0)
         } else { // Started
             (false, room.bet_amount)

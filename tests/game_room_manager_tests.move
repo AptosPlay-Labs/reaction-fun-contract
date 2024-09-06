@@ -89,7 +89,7 @@ module chain_reaction_fun::game_room_manager_tests {
         let balance_coin = coin::balance<AptosCoin>(signer::address_of(aptos_framework));
         debug::print(&balance_coin);
 
-        game_room_manager::initialize(&chain_reaction);
+        //game_room_manager::initialize(&chain_reaction);
 
         let room_id = game_room_manager::create_room(&chain_reaction, 100, 2);
         assert!(room_id == 1, 1);
@@ -108,7 +108,7 @@ module chain_reaction_fun::game_room_manager_tests {
     ) {
         setup_player_accounts(aptos_framework, chain_reaction, player1, player2, fee_address);
 
-        game_room_manager::initialize(chain_reaction);
+        //game_room_manager::initialize(chain_reaction);
         let room_id = game_room_manager::create_room(chain_reaction, 100, 2);
         assert!(room_id == 1, 1);
 
@@ -122,7 +122,7 @@ module chain_reaction_fun::game_room_manager_tests {
     public fun test_create_room_min_player( aptos_framework: &signer, chain_reaction: &signer, player1: &signer, player2: &signer, fee_address: &signer) {
 
         setup_player_accounts(aptos_framework, chain_reaction, player1, player2, fee_address);
-        game_room_manager::initialize(chain_reaction);
+        //game_room_manager::initialize(chain_reaction);
 
         game_room_manager::create_room(chain_reaction, 100, 1);
     }
@@ -132,7 +132,7 @@ module chain_reaction_fun::game_room_manager_tests {
     public fun test_join_full_room( aptos_framework: &signer, chain_reaction: &signer, player1: &signer, player2: &signer, fee_address: &signer) {
 
         setup_player_accounts(aptos_framework, chain_reaction, player1, player2, fee_address);
-        game_room_manager::initialize(chain_reaction);
+        //game_room_manager::initialize(chain_reaction);
 
         let room_id = game_room_manager::create_room(chain_reaction, 100, 2);
         game_room_manager::join_and_bet(player1, room_id);
@@ -185,6 +185,7 @@ module chain_reaction_fun::game_room_manager_tests {
         setup_player_accounts(aptos_framework, chain_reaction, player1, player2, fee_address);
         game_room_manager::initialize(chain_reaction);
         admin_contract::initialize(chain_reaction);
+
         admin_contract::set_fee_account(chain_reaction, FEE_ADDRESS);
 
         let player1_addr = signer::address_of(player1);

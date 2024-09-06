@@ -10,13 +10,24 @@ module chain_reaction_fun::admin_contract {
 
     const E_NOT_ADMIN: u64 = 1;
     const E_FEE_ACCOUNT_NOT_SET: u64 = 2;
+    const E_ALREADY_INITIALIZED: u64 = 3;
 
-    public fun initialize(account: &signer) {
+
+    fun init_module(account: &signer) {
+        assert!(!exists<AdminConfig>(signer::address_of(account)), E_ALREADY_INITIALIZED);
         move_to(account, AdminConfig {
             admins: vector::singleton(signer::address_of(account)),
             fee_account: option::none(),
         });
     }
+
+    // public fun initialize(account: &signer) {
+    //     assert!(!exists<AdminConfig>(signer::address_of(account)), E_ALREADY_INITIALIZED);
+    //     move_to(account, AdminConfig {
+    //         admins: vector::singleton(signer::address_of(account)),
+    //         fee_account: option::none(),
+    //     });
+    // }
 
     public fun is_admin(account: &signer): bool acquires AdminConfig {
         let admin_config = borrow_global<AdminConfig>(@chain_reaction_fun);
