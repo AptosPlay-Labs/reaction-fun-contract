@@ -18,6 +18,14 @@ module chain_reaction_fun::game_verifier_tests {
     const NOT_SIGNATURE: vector<u8> = x"000000000000000000000000000000000000000000000000000000";
 
     #[test]
+    public fun text_create_mesage(){
+        let message = game_verifier::room_id_to_bytes(4);
+        vector::append(&mut message, game_verifier::address_to_bytes(WINNER_ADDRESS));
+        vector::append(&mut message, b"0winner");
+        debug::print(&message);
+    }
+
+    #[test]
     public fun test_create_signature() {
         // Crear el mensaje a firmar
         let message = game_verifier::room_id_to_bytes(ROOM_ID);

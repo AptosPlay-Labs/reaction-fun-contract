@@ -1,5 +1,6 @@
 module chain_reaction_fun::chain_reaction_game {
     use std::signer;
+    use std::event;
     use aptos_std::table::{Self, Table};
     use chain_reaction_fun::admin_contract;
     use chain_reaction_fun::game_room_manager;
@@ -11,6 +12,14 @@ module chain_reaction_fun::chain_reaction_game {
         end_games: u64,
         total_fees: u64,
         fee_percentage: u8,
+    }
+
+    #[event]
+    struct RoomCreatedEvent has drop, store {
+        room_id: u64,
+        creator: address,
+        bet_amount: u64,
+        max_players: u8
     }
 
     // Error constants
@@ -43,7 +52,15 @@ module chain_reaction_fun::chain_reaction_game {
         let state = borrow_global_mut<GameState>(@chain_reaction_fun);
         table::add(&mut state.rooms, room_id, true);
         state.created_games = state.created_games + 1;
-        state.active_games = state.active_games + 1; // Incrementar active_games al crear una sala
+        state.active_games = state.active_games + 1;
+
+        // Emitir el evento
+        event::emit<RoomCreatedEvent>(RoomCreatedEvent {
+            room_id,
+            creator: signer::address_of(creator),
+            bet_amount,
+            max_players
+        });
     }
 
     public entry fun join_room(player: &signer, room_id: u64) {

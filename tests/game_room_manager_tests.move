@@ -144,7 +144,7 @@ module chain_reaction_fun::game_room_manager_tests {
     public fun test_leave_room( aptos_framework: &signer, chain_reaction: &signer, player1: &signer, player2: &signer, fee_address: &signer) {
 
         setup_player_accounts(aptos_framework, chain_reaction, player1, player2, fee_address);
-        game_room_manager::initialize(chain_reaction);
+        //game_room_manager::initialize(chain_reaction);
 
         let room_id = game_room_manager::create_room(player1, 100, 3);
         game_room_manager::join_and_bet(player2, room_id);
@@ -183,8 +183,8 @@ module chain_reaction_fun::game_room_manager_tests {
     public fun test_distribute_winnings_with_fee( aptos_framework: &signer, chain_reaction: &signer, player1: &signer, player2: &signer, fee_address: &signer) {
 
         setup_player_accounts(aptos_framework, chain_reaction, player1, player2, fee_address);
-        game_room_manager::initialize(chain_reaction);
-        admin_contract::initialize(chain_reaction);
+        //game_room_manager::initialize(chain_reaction);
+        //admin_contract::initialize(chain_reaction);
 
         admin_contract::set_fee_account(chain_reaction, FEE_ADDRESS);
 
